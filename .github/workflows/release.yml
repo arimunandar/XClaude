@@ -67,8 +67,6 @@ jobs:
     name: Publish to npm
     runs-on: ubuntu-latest
     needs: build-binaries
-    # Only runs if NPM_TOKEN secret is set
-    if: ${{ secrets.NPM_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
