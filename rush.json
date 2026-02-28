@@ -1,0 +1,26 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/rush/v5/rush.schema.json",
+  "rushVersion": "5.140.0",
+  "npmVersion": "11.7.0",
+  "nodeSupportedVersionRange": ">=18.0.0 <22.0.0",
+  "projectFolderMinDepth": 2,
+  "projectFolderMaxDepth": 2,
+  "projects": [
+    {
+      "packageName": "@ios-code/tools-xcode",
+      "projectFolder": "packages/tools-xcode"
+    },
+    {
+      "packageName": "@ios-code/tools-swift",
+      "projectFolder": "packages/tools-swift"
+    },
+    {
+      "packageName": "@ios-code/core",
+      "projectFolder": "packages/core"
+    },
+    {
+      "packageName": "@ios-code/cli",
+      "projectFolder": "packages/cli"
+    }
+  ]
+}

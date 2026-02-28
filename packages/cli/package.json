@@ -1,0 +1,29 @@
+{
+  "name": "@ios-code/cli",
+  "version": "0.1.0",
+  "description": "CLI binary for ios-code — iOS-focused Claude Code assistant",
+  "bin": {
+    "ios-code": "dist/index.js"
+  },
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@ios-code/core": "workspace:*",
+    "@ios-code/tools-xcode": "workspace:*",
+    "@ios-code/tools-swift": "workspace:*",
+    "commander": "^12.0.0",
+    "ink": "^4.4.1",
+    "ink-text-input": "^5.0.1",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/ink": "^3.0.0"
+  }
+}
