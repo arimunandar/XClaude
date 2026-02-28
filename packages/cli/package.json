@@ -1,5 +1,5 @@
 {
-  "name": "@xclaude/cli",
+  "name": "xclaude",
   "type": "module",
   "version": "0.1.0",
   "description": "xclaude \u2014 iOS-focused Claude Code assistant (Apple platform AI CLI)",
@@ -32,9 +32,6 @@
     "dist/",
     "README.md"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",

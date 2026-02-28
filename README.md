@@ -331,10 +331,10 @@ The script detects your architecture, downloads the pre-built binary from GitHub
 ### Option 2 — npm (like Claude Code)
 
 ```bash
-npm install -g @xclaude/cli
+npm install -g xclaude
 ```
 
-> **Note:** Requires you to publish `@xclaude/cli` to npm first (see [Publishing to npm](#publishing-to-npm)).
+> **Note:** Requires you to be logged into npm first. The package name is `xclaude` — install with the command above.
 > The package uses `bundledDependencies` — all internal packages are bundled into a single install.
 
 ### Option 3 — Homebrew
@@ -604,17 +604,20 @@ git push origin v0.1.0
 The `release.yml` workflow will:
 1. Build Bun standalone binaries (`xclaude-arm64`, `xclaude-x86_64`)
 2. Create a GitHub Release and attach both binaries
-3. Publish `@xclaude/cli` to npm (with bundled internal packages)
+3. Publish `xclaude` to npm (with bundled internal packages)
 
 ### Publishing to npm
 
-1. Create an npm account and the `@xclaude` organisation (or use your personal scope)
-2. Add `NPM_TOKEN` to your GitHub repository secrets
-3. Push a version tag (see above) — the release workflow handles publishing
+The package name is `xclaude` (unscoped — no org required):
+
+1. Create an account at [npmjs.com](https://www.npmjs.com) if you don't have one
+2. Generate an **Automation** access token at npmjs.com → Account → Access Tokens
+3. Add it to GitHub: **Settings → Secrets → Actions → New secret** named `NPM_TOKEN`
+4. Push a version tag — the release workflow publishes automatically
 
 Users can then install with:
 ```bash
-npm install -g @xclaude/cli
+npm install -g xclaude
 ```
 
 ### Publishing to Homebrew

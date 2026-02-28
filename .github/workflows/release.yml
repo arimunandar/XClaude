@@ -36,9 +36,8 @@ jobs:
       - name: Build Bun binaries
         run: bash scripts/build-binary.sh
 
-      - name: Rename binaries with version tag
+      - name: Rename binaries for release
         run: |
-          VERSION="${GITHUB_REF_NAME}"
           cp dist/xclaude     dist/xclaude-arm64
           cp dist/xclaude-x86 dist/xclaude-x86_64
 
@@ -49,11 +48,27 @@ jobs:
             dist/xclaude-arm64
             dist/xclaude-x86_64
           generate_release_notes: true
+          body: |
+            ## Install
+
+            **One-line installer (macOS):**
+            ```bash
+            curl -fsSL https://raw.githubusercontent.com/arimunandar/XClaude/main/install.sh | bash
+            ```
+
+            **npm:**
+            ```bash
+            npm install -g xclaude
+            ```
+
+            **Manual download:** grab the binary for your architecture below, make it executable, and move to your PATH.
 
   publish-npm:
     name: Publish to npm
     runs-on: ubuntu-latest
     needs: build-binaries
+    # Only runs if NPM_TOKEN secret is set
+    if: ${{ secrets.NPM_TOKEN != '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -71,7 +86,7 @@ jobs:
       - name: Build all packages
         run: npm run build
 
-      - name: Publish @xclaude/cli (with bundled deps)
+      - name: Publish xclaude to npm
         run: npm publish --workspace packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
