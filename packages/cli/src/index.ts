@@ -131,7 +131,7 @@ async function runInteractive(
       case "build": {
         const result = await buildSimulator(
           { project, scheme },
-          (line) => process.stdout.write(line + "\n")
+          (line: string) => process.stdout.write(line + "\n")
         );
         if (!result.success) {
           throw new Error(`Build failed (exit code ${result.exitCode})`);
@@ -146,7 +146,7 @@ async function runInteractive(
             scheme,
             testIdentifier: command.testIdentifier,
           },
-          (line) => process.stdout.write(line + "\n")
+          (line: string) => process.stdout.write(line + "\n")
         );
         if (!result.success) {
           throw new Error(
@@ -174,7 +174,7 @@ async function runInteractive(
       case "deploy": {
         const result = await runOnSimulator(
           { project, scheme },
-          (line) => process.stdout.write(line + "\n")
+          (line: string) => process.stdout.write(line + "\n")
         );
         if (!result.success) {
           throw new Error(`Deploy failed: ${result.output}`);
