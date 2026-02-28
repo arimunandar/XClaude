@@ -1,7 +1,7 @@
 {
   "name": "@xclaude/core",
   "version": "0.1.0",
-  "description": "Core agent loop for xclaude — iOS-focused Claude Code assistant",
+  "description": "Core agent loop for xclaude \u2014 iOS-focused Claude Code assistant",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -11,7 +11,8 @@
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.0",
     "@xclaude/tools-xcode": "*",
-    "@xclaude/tools-swift": "*"
+    "@xclaude/tools-swift": "*",
+    "zod": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.3.0",
