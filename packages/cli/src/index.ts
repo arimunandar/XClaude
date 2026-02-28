@@ -1,11 +1,24 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { detectProject, listSchemes, listSimulators, buildSimulator, runOnSimulator, runTests } from "@ios-code/tools-xcode";
-import { runSwiftLint, formatViolations, buildDirectoryReviewPrompt, buildDirectorySecurityAudit } from "@ios-code/tools-swift";
+import {
+  detectProject,
+  listSchemes,
+  listSimulators,
+  buildSimulator,
+  runOnSimulator,
+  runTests,
+} from "@ios-code/tools-xcode";
+import {
+  runSwiftLint,
+  formatViolations,
+  buildDirectoryReviewPrompt,
+  buildDirectorySecurityAudit,
+} from "@ios-code/tools-swift";
 import { runAgent } from "@ios-code/core";
 import type { Message } from "@ios-code/core";
 import { parseSlashCommand, describeProject } from "./commands.js";
 import type { SlashCommand } from "./commands.js";
+import { startUI } from "./ui.js";
 
 const VERSION = "0.1.0";
 
@@ -18,32 +31,37 @@ program
   .option("-p, --project <path>", "Path to Xcode project/workspace root")
   .option("--scheme <scheme>", "Xcode scheme to use")
   .argument("[prompt]", "One-shot prompt (non-interactive mode)")
-  .action(async (prompt: string | undefined, options: { project?: string; scheme?: string }) => {
-    // Detect project
-    const searchRoot = options.project ?? process.cwd();
-    const project = detectProject(searchRoot);
+  .action(
+    async (
+      prompt: string | undefined,
+      options: { project?: string; scheme?: string }
+    ) => {
+      // Detect project
+      const searchRoot = options.project ?? process.cwd();
+      const project = detectProject(searchRoot);
 
-    if (!project && !prompt) {
-      console.log(describeProject(project));
-      console.log("\nTip: Run from a directory containing an Xcode project.");
+      if (!project && !prompt) {
+        console.log(describeProject(project));
+        console.log("\nTip: Run from a directory containing an Xcode project.");
+      }
+
+      // Determine scheme
+      let scheme = options.scheme;
+      if (!scheme && project) {
+        const schemes = listSchemes(project);
+        scheme = schemes[0]; // Use first available scheme by default
+      }
+
+      // One-shot mode (non-interactive)
+      if (prompt) {
+        await runOneShot(prompt, project, scheme);
+        return;
+      }
+
+      // Interactive mode
+      await runInteractive(project, scheme);
     }
-
-    // Determine scheme
-    let scheme = options.scheme;
-    if (!scheme && project) {
-      const schemes = listSchemes(project);
-      scheme = schemes[0]; // Use first available scheme by default
-    }
-
-    // One-shot mode (non-interactive)
-    if (prompt) {
-      await runOneShot(prompt, project, scheme);
-      return;
-    }
-
-    // Interactive mode
-    await runInteractive(project, scheme);
-  });
+  );
 
 // ─── Non-interactive (one-shot) mode ─────────────────────────────────────────
 
@@ -53,11 +71,10 @@ async function runOneShot(
   scheme: string | undefined
 ): Promise<void> {
   const contextPrefix = project
-    ? `[Project: ${describeProject(project)}]\n\n`
+    ? `[Project: ${describeProject(project)}, Scheme: ${scheme ?? "auto"}]\n\n`
     : "";
 
   const history: Message[] = [];
-  let outputText = "";
 
   process.stdout.write("\n");
 
@@ -66,15 +83,12 @@ async function runOneShot(
       for (const block of message.message.content) {
         if (block.type === "text") {
           process.stdout.write(block.text);
-          outputText += block.text;
         }
       }
     }
   }
 
-  if (outputText && !outputText.endsWith("\n")) {
-    process.stdout.write("\n");
-  }
+  process.stdout.write("\n");
 }
 
 // ─── Interactive (REPL) mode ──────────────────────────────────────────────────
@@ -83,9 +97,6 @@ async function runInteractive(
   project: ReturnType<typeof detectProject>,
   scheme: string | undefined
 ): Promise<void> {
-  // Import ink lazily to keep startup fast in one-shot mode
-  const { startUI } = await import("./ui.js");
-
   const history: Message[] = [];
 
   const handleUserMessage = async (userInput: string): Promise<void> => {
@@ -93,17 +104,23 @@ async function runInteractive(
       ? `[Project: ${describeProject(project)}, Scheme: ${scheme ?? "auto"}]\n\n`
       : "";
 
-    for await (const message of runAgent(contextPrefix + userInput, history)) {
-      // The UI subscribes via the streaming mechanism; messages are yielded here
-      // In the ink UI model we update state after each full message
+    for await (const message of runAgent(
+      contextPrefix + userInput,
+      history
+    )) {
       if (message.type === "assistant") {
-        // Messages are appended to history automatically by runAgent
-        // The UI re-renders based on state updates triggered externally
+        for (const block of message.message.content) {
+          if (block.type === "text") {
+            process.stdout.write(block.text);
+          }
+        }
       }
     }
   };
 
   const handleSlashCommand = async (command: SlashCommand): Promise<void> => {
+    if (command.type === "help" || command.type === "unknown") return;
+
     if (!project || !scheme) {
       throw new Error(
         "No Xcode project detected. Run ios-code from your project directory."
@@ -124,7 +141,11 @@ async function runInteractive(
 
       case "test": {
         const result = await runTests(
-          { project, scheme, testIdentifier: command.testIdentifier },
+          {
+            project,
+            scheme,
+            testIdentifier: command.testIdentifier,
+          },
           (line) => process.stdout.write(line + "\n")
         );
         if (!result.success) {
@@ -145,8 +166,8 @@ async function runInteractive(
       }
 
       case "review": {
-        const prompt = buildDirectoryReviewPrompt(project.root);
-        await handleUserMessage(prompt.userPrompt);
+        const reviewPrompt = buildDirectoryReviewPrompt(project.root);
+        await handleUserMessage(reviewPrompt.userPrompt);
         break;
       }
 
@@ -160,9 +181,6 @@ async function runInteractive(
         }
         break;
       }
-
-      default:
-        break;
     }
   };
 

@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.0",
-    "@ios-code/tools-xcode": "workspace:*",
-    "@ios-code/tools-swift": "workspace:*"
+    "@ios-code/tools-xcode": "*",
+    "@ios-code/tools-swift": "*"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

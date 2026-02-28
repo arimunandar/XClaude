@@ -1,0 +1,26 @@
+{
+  "name": "ios-code-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/tools-xcode",
+    "packages/tools-swift",
+    "packages/core",
+    "packages/cli"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "node --experimental-vm-modules node_modules/.bin/jest --watch",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage",
+    "install:rush": "npx @microsoft/rush install",
+    "build:rush": "npx @microsoft/rush build"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "jest": "^30.2.0",
+    "@jest/globals": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "@types/jest": "^30.0.0"
+  }
+}
