@@ -5,7 +5,7 @@ import * as path from "path";
 import { buildSecurityAuditPrompt, buildDirectorySecurityAudit } from "../security.js";
 
 function createTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "ios-code-sec-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "xclaude-sec-test-"));
 }
 
 function cleanupDir(dir: string): void {

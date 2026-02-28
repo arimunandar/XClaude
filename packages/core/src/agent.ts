@@ -1,6 +1,35 @@
 import { query, type SDKMessage, type Options } from "@anthropic-ai/claude-code";
+import { execSync } from "child_process";
 import { IOS_SYSTEM_PROMPT } from "./prompt.js";
 import { createIosMcpServer } from "./tools.js";
+
+/**
+ * Resolve the path to the `claude` CLI binary.
+ * Checks common locations so the SDK can find it regardless of PATH.
+ */
+function resolveClaudePath(): string | undefined {
+  // If the env var is set, trust it
+  if (process.env.IOS_CODE_CLAUDE_PATH) {
+    return process.env.IOS_CODE_CLAUDE_PATH;
+  }
+  try {
+    return execSync("which claude", { encoding: "utf8" }).trim();
+  } catch {
+    // Fall back to common install locations
+    const candidates = [
+      "/Users/" + process.env.USER + "/.local/bin/claude",
+      "/usr/local/bin/claude",
+      "/opt/homebrew/bin/claude",
+    ];
+    for (const p of candidates) {
+      try {
+        execSync(`test -x "${p}"`, { stdio: "ignore" });
+        return p;
+      } catch { /* continue */ }
+    }
+  }
+  return undefined;
+}
 
 export type Message = SDKMessage;
 
@@ -26,12 +55,23 @@ export async function* runAgent(
 ): AsyncGenerator<SDKMessage> {
   const iosMcpServer = createIosMcpServer();
 
+  const claudePath = resolveClaudePath();
+
+  // Strip CLAUDECODE env var so the SDK's subprocess is not blocked
+  // when xclaude is launched from within another Claude Code session.
+  const env: Record<string, string> = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (k !== "CLAUDECODE" && v !== undefined) env[k] = v;
+  }
+
   const queryOptions: Options = {
     customSystemPrompt: IOS_SYSTEM_PROMPT,
     maxTurns: options.maxTurns ?? 50,
     cwd: options.cwd,
+    env,
+    ...(claudePath ? { pathToClaudeCodeExecutable: claudePath } : {}),
     mcpServers: {
-      "ios-code-tools": iosMcpServer,
+      "xclaude-tools": iosMcpServer,
     },
   };
 

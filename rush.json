@@ -7,19 +7,19 @@
   "projectFolderMaxDepth": 2,
   "projects": [
     {
-      "packageName": "@ios-code/tools-xcode",
+      "packageName": "@xclaude/tools-xcode",
       "projectFolder": "packages/tools-xcode"
     },
     {
-      "packageName": "@ios-code/tools-swift",
+      "packageName": "@xclaude/tools-swift",
       "projectFolder": "packages/tools-swift"
     },
     {
-      "packageName": "@ios-code/core",
+      "packageName": "@xclaude/core",
       "projectFolder": "packages/core"
     },
     {
-      "packageName": "@ios-code/cli",
+      "packageName": "@xclaude/cli",
       "projectFolder": "packages/cli"
     }
   ]

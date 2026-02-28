@@ -1,7 +1,7 @@
 {
-  "name": "@ios-code/tools-xcode",
+  "name": "@xclaude/tools-xcode",
   "version": "0.1.0",
-  "description": "Xcode build, test, and simulator tools for ios-code",
+  "description": "Xcode build, test, and simulator tools for xclaude",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

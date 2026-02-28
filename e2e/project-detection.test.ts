@@ -23,10 +23,10 @@ jest.unstable_mockModule("child_process", () => ({
 
 // Dynamic imports AFTER mocks
 const { detectProject, buildSimulator, runTests } = await import(
-  "@ios-code/tools-xcode"
+  "@xclaude/tools-xcode"
 );
 const { runSwiftLint, formatViolations, buildDirectorySecurityAudit, buildDirectoryReviewPrompt } =
-  await import("@ios-code/tools-swift");
+  await import("@xclaude/tools-swift");
 const { parseSlashCommand, helpText } = await import(
   "../packages/cli/src/commands.js"
 );
@@ -34,7 +34,7 @@ const { parseSlashCommand, helpText } = await import(
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function createTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "ios-code-e2e-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "xclaude-e2e-"));
 }
 
 function cleanupDir(dir: string): void {
@@ -501,7 +501,7 @@ describe("E2E: CLI Command Dispatch", () => {
 
 describe("E2E: System Prompt Validation", () => {
   it("iOS system prompt refuses non-iOS topics", async () => {
-    const { IOS_SYSTEM_PROMPT } = await import("@ios-code/core");
+    const { IOS_SYSTEM_PROMPT } = await import("@xclaude/core");
 
     // The system prompt must contain the scope restriction rule
     expect(IOS_SYSTEM_PROMPT).toContain("ONLY help with Apple platform");
@@ -509,7 +509,7 @@ describe("E2E: System Prompt Validation", () => {
   });
 
   it("iOS system prompt mentions all slash commands", async () => {
-    const { IOS_SYSTEM_PROMPT } = await import("@ios-code/core");
+    const { IOS_SYSTEM_PROMPT } = await import("@xclaude/core");
 
     expect(IOS_SYSTEM_PROMPT).toContain("/build");
     expect(IOS_SYSTEM_PROMPT).toContain("/test");
@@ -519,7 +519,7 @@ describe("E2E: System Prompt Validation", () => {
   });
 
   it("iOS system prompt enforces Swift 6 standards", async () => {
-    const { IOS_SYSTEM_PROMPT } = await import("@ios-code/core");
+    const { IOS_SYSTEM_PROMPT } = await import("@xclaude/core");
 
     expect(IOS_SYSTEM_PROMPT).toContain("Swift 6");
     expect(IOS_SYSTEM_PROMPT).toContain("@MainActor");

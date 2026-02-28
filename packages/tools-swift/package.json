@@ -1,7 +1,7 @@
 {
-  "name": "@ios-code/tools-swift",
+  "name": "@xclaude/tools-swift",
   "version": "0.1.0",
-  "description": "SwiftLint, architecture review, and security audit tools for ios-code",
+  "description": "SwiftLint, architecture review, and security audit tools for xclaude",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

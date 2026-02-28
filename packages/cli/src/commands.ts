@@ -1,4 +1,4 @@
-import type { XcodeProject } from "@ios-code/tools-xcode";
+import type { XcodeProject } from "@xclaude/tools-xcode";
 
 export type SlashCommand =
   | { type: "build" }
@@ -47,7 +47,7 @@ export function parseSlashCommand(input: string): SlashCommand | null {
 
 export function helpText(): string {
   return `
-ios-code slash commands:
+xclaude slash commands:
   /build          Build the detected Xcode project for simulator
   /test           Run the full test suite (XCTest / Swift Testing)
   /test <id>      Run a specific test (e.g. /test MyTests/testLogin)

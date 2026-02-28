@@ -5,7 +5,7 @@ import * as path from "path";
 import { buildArchitectureReviewPrompt, buildDirectoryReviewPrompt } from "../review.js";
 
 function createTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "ios-code-review-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "xclaude-review-test-"));
 }
 
 function cleanupDir(dir: string): void {

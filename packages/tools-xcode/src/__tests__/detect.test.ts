@@ -5,7 +5,7 @@ import * as path from "path";
 import { detectProject, listSchemes, projectFlag } from "../detect.js";
 
 function createTempDir(): string {
-  return fs.mkdtempSync(path.join(os.tmpdir(), "ios-code-test-"));
+  return fs.mkdtempSync(path.join(os.tmpdir(), "xclaude-test-"));
 }
 
 function cleanupDir(dir: string): void {

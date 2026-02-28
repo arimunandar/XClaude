@@ -7,15 +7,15 @@ import {
   buildSimulator,
   runOnSimulator,
   runTests,
-} from "@ios-code/tools-xcode";
+} from "@xclaude/tools-xcode";
 import {
   runSwiftLint,
   formatViolations,
   buildDirectoryReviewPrompt,
   buildDirectorySecurityAudit,
-} from "@ios-code/tools-swift";
-import { runAgent } from "@ios-code/core";
-import type { Message } from "@ios-code/core";
+} from "@xclaude/tools-swift";
+import { runAgent } from "@xclaude/core";
+import type { Message } from "@xclaude/core";
 import { parseSlashCommand, describeProject } from "./commands.js";
 import type { SlashCommand } from "./commands.js";
 import { startUI } from "./ui.js";
@@ -25,7 +25,7 @@ const VERSION = "0.1.0";
 const program = new Command();
 
 program
-  .name("ios-code")
+  .name("xclaude")
   .description("iOS-focused Claude Code AI assistant")
   .version(VERSION)
   .option("-p, --project <path>", "Path to Xcode project/workspace root")
@@ -123,7 +123,7 @@ async function runInteractive(
 
     if (!project || !scheme) {
       throw new Error(
-        "No Xcode project detected. Run ios-code from your project directory."
+        "No Xcode project detected. Run xclaude from your project directory."
       );
     }
 

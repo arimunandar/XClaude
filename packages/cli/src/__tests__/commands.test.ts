@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { parseSlashCommand, helpText, describeProject } from "../commands.js";
-import type { XcodeProject } from "@ios-code/tools-xcode";
+import type { XcodeProject } from "@xclaude/tools-xcode";
 
 describe("parseSlashCommand", () => {
   it("returns null for regular chat messages", () => {

@@ -1,7 +1,32 @@
+# ── Node.js ──────────────────────────────────────────────────────────────────
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+.pnpm-debug.log*
+
+# ── TypeScript build output ──────────────────────────────────────────────────
 dist/
+*.tsbuildinfo
+
+# ── Test coverage ────────────────────────────────────────────────────────────
 coverage/
-*.js.map
-*.d.ts.map
-.rush/temp/
+.nyc_output/
+
+# ── Rush / common temp ───────────────────────────────────────────────────────
 common/temp/
+.rush/temp/
+
+# ── macOS ────────────────────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+
+# ── Editor / IDE ─────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local

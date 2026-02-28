@@ -24,12 +24,12 @@ export default {
     // Strip .js extensions for TypeScript source imports
     "^(\\.{1,2}/.*)\\.js$": "$1",
     // Map workspace packages to their source
-    "^@ios-code/tools-xcode$":
+    "^@xclaude/tools-xcode$":
       "<rootDir>/packages/tools-xcode/src/index.ts",
-    "^@ios-code/tools-swift$":
+    "^@xclaude/tools-swift$":
       "<rootDir>/packages/tools-swift/src/index.ts",
-    "^@ios-code/core$": "<rootDir>/packages/core/src/index.ts",
-    "^@ios-code/cli$": "<rootDir>/packages/cli/src/exports.ts",
+    "^@xclaude/core$": "<rootDir>/packages/core/src/index.ts",
+    "^@xclaude/cli$": "<rootDir>/packages/cli/src/exports.ts",
   },
   testMatch: [
     "<rootDir>/packages/*/src/__tests__/**/*.test.ts",

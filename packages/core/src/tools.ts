@@ -6,13 +6,13 @@ import {
   buildSimulator,
   runOnSimulator,
   runTests,
-} from "@ios-code/tools-xcode";
+} from "@xclaude/tools-xcode";
 import {
   runSwiftLint,
   formatViolations,
   buildDirectoryReviewPrompt,
   buildDirectorySecurityAudit,
-} from "@ios-code/tools-swift";
+} from "@xclaude/tools-swift";
 
 /**
  * Build the MCP server configuration containing all iOS tools.
@@ -270,7 +270,7 @@ export function createIosMcpServer(): McpServerConfig {
   );
 
   return createSdkMcpServer({
-    name: "ios-code-tools",
+    name: "xclaude-tools",
     version: "0.1.0",
     tools: [
       detectProjectTool,

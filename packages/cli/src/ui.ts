@@ -1,5 +1,5 @@
 import * as readline from "readline";
-import type { XcodeProject } from "@ios-code/tools-xcode";
+import type { XcodeProject } from "@xclaude/tools-xcode";
 import type { SlashCommand } from "./commands.js";
 import { describeProject, helpText } from "./commands.js";
 
@@ -17,7 +17,7 @@ function color(str: string, c: string): string {
 
 function printBanner(project: XcodeProject | null): void {
   console.log(
-    `\n${color("ios-code", BOLD + CYAN)} ${color("— iOS-focused Claude Code assistant", GRAY)}`
+    `\n${color("xclaude", BOLD + CYAN)} ${color("— iOS-focused Claude Code assistant", GRAY)}`
   );
   console.log(color("─".repeat(50), GRAY));
   console.log(color(describeProject(project), GRAY));
@@ -80,7 +80,7 @@ export function startUI(
         console.error(color(`✖ ${err instanceof Error ? err.message : String(err)}`, RED));
       }
     } else {
-      process.stdout.write(color("\nios-code: ", CYAN + BOLD));
+      process.stdout.write(color("\nxclaude: ", CYAN + BOLD));
       try {
         await onUserMessage(input);
       } catch (err) {

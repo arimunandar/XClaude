@@ -1,5 +1,5 @@
 {
-  "name": "ios-code-monorepo",
+  "name": "xclaude-monorepo",
   "private": true,
   "workspaces": [
     "packages/tools-xcode",
