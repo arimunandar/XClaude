@@ -29,30 +29,104 @@ CRITICAL RULES (always follow, no exceptions):
 - Never suggest migrating UIKit code to SwiftUI unless asked.
 
 ## Architecture: VIP+W (MANDATORY)
-Every feature uses VIP+W Clean Architecture with strict layer separation:
+Components and their single responsibility:
 
-  View (UIViewController)
-    ↓ forwards user actions via <Feature>BusinessLogic protocol
+  View (UIViewController OR UIView)
+    → Renders UI, forwards user actions as Request to Interactor
+    → Displays ViewModel from Presenter — ZERO business logic
   Interactor
-    ↓ orchestrates logic, calls Workers
-    ↓ sends results via <Feature>PresentationLogic protocol
+    → All business logic; orchestrates Workers; applies business rules
+    → Sends Response to Presenter — ONE Presenter per Interactor
   Presenter
-    ↓ formats into ViewModels, sends via <Feature>DisplayLogic protocol
-  View (displays ViewModel)
+    → Formats Response into ViewModel (dates, strings, localization)
+    → ZERO business logic; no network or data access
+  Worker
+    → Fetches raw data from Services; returns raw data to Interactor
+    → Shareable across multiple Interactors
+  Services (called by Workers)
+    → API clients, WebSocket handlers, CoreData, UserDefaults, Keychain
+    → Completely reusable; zero business logic
+  Router
+    → Navigation between scenes; passes data via DataStore protocol
+    → Creates and configures destination ViewControllers
 
-  Worker (called by Interactor)
-    - Network/API calls (URLSession, Alamofire)
-    - Data persistence (CoreData, SwiftData, UserDefaults)
-    - Third-party SDKs (Analytics, Payments, etc.)
+### Fundamental Rules (never violate)
+1. View can have MANY Interactors (one per independent domain on the screen)
+2. Interactor has exactly ONE Presenter
+3. Interactor can have MANY Workers
+4. Worker is SHAREABLE across multiple Interactors
+5. Data flow is strictly UNIDIRECTIONAL:
+   Request:  View → Interactor → Worker → Service
+   Response: Service → Worker → Interactor → Presenter → View
+
+### Data Model Structure — Nested Enum (MANDATORY)
+All models live in `<Feature>Models.swift` using nested enums:
+  enum Login {
+      enum Authenticate {          // one enum per use case
+          struct Request { }       // View → Interactor
+          struct Response { }      // Interactor → Presenter
+          struct ViewModel { }     // Presenter → View
+      }
+  }
+
+### VIP-Lite: Complexity-Based Selection (MANDATORY)
+Match the VIP tier to the screen — NEVER over-engineer:
+
+  🟢 Static / No Data   → ViewController + Router only
+     Examples: About page, static settings, info screens
+
+  🟡 Simple Display     → ViewController + Router + Formatter utility (no full VIP cycle)
+     Examples: Simple detail view, basic profile display
+
+  🟠 Complex Display    → ViewController + Interactor (pass-through) + Presenter + Router
+     Interactor exists only to preserve the unidirectional cycle — no Worker needed
+     Examples: Receipt with complex formatting, multi-section display
+
+  🟣 Data Fetching      → Full VIP+W (VC + Interactor + Worker + Presenter + Router)
+     Examples: List screens, dashboard, any API-driven content
+
+  🔴 Complex Logic      → Full VIP+W + multiple Workers + multiple Interactors
+     Examples: Checkout, payment, multi-step forms, complex validation
+
+### Advanced Composition Patterns
+Multiple Workers — one Interactor coordinates parallel data sources:
+  Use async let or DispatchGroup for parallel fetching.
+  Example: Dashboard → UserWorker + NotificationsWorker + OrdersWorker
+
+Multiple Interactors per ViewController — one screen, independent domains:
+  Each Interactor is focused, testable, and reusable across screens.
+  Example: ProductDetailVC → CartInteractor + WishlistInteractor + ReviewsInteractor
+
+Shared Interactor — one Interactor, multiple Presenters/ViewControllers:
+  Interactor broadcasts to all registered Presenters (register/unregister pattern).
+  Example: iPad Split View, real-time stock widgets, dashboard cards
+
+UIView as DisplayLogic — VIP works with UIView, not just UIViewController:
+  Use when: reusable component on 3+ screens, complex table/collection cells,
+  real-time data views, embedded dashboard widgets with independent data.
+  UIView conforms to DisplayLogic — Interactor does not care whether it is a
+  UIView or UIViewController.
+  Do NOT use for: simple display-only views, purely presentational components,
+  one-time-use views with no business logic.
+
+### File Structure
+Features/<Feature>/
+├── <Feature>ViewController.swift   — UI only, zero logic
+├── <Feature>Interactor.swift       — business logic
+├── <Feature>Presenter.swift        — formatting only
+├── <Feature>Router.swift           — navigation + DataStore
+├── <Feature>Models.swift           — nested Request/Response/ViewModel enums
+├── <Feature>Protocols.swift        — all inter-layer protocols
+└── Workers/
+    └── <Feature>Worker.swift       — data fetching; delegates to Services
 
 Layer communication is protocol-only — no concrete class dependencies:
-  - View → Interactor: `<Feature>BusinessLogic` protocol
-  - Interactor → Presenter: `<Feature>PresentationLogic` protocol
-  - Presenter → View: `<Feature>DisplayLogic` protocol
-  - Worker: `<Feature>WorkerProtocol`
-
-Standard naming: LoginViewController, LoginInteractor, LoginPresenter, LoginWorker
-Feature folder: Features/Login/ (all VIP+W files together)
+  View → Interactor:      `<Feature>BusinessLogic`
+  Interactor → Presenter: `<Feature>PresentationLogic`
+  Presenter → View:       `<Feature>DisplayLogic`
+  Interactor → Worker:    `<Feature>WorkerProtocol`
+  Worker → Service:       `<ServiceName>Protocol`
+  Router DataStore:       `<Feature>DataStore`
 
 ## UIKit Layout: Horizontal-First Pattern (MANDATORY)
 When creating a NEW UIView or UIViewController:
@@ -103,6 +177,9 @@ ASCII wireframe example:
 
 ### Safety Rules
 - No force unwrap (`!`) anywhere — use guard let, if let, or ?? default
+- Injected dependencies MUST be non-optional — optional injected deps cause force-unwrap crashes:
+  ✓ init(interactor: LoginBusinessLogic) { self.interactor = interactor }
+  ✗ init(interactor: LoginBusinessLogic?) { self.interactor = interactor! }  — crash if nil
 - Prefer `guard let` over `if let` for early exit:
   ✓ guard let user = user else { return }
   ✗ if let user = user { /* deeply nested */ }
@@ -136,11 +213,15 @@ ASCII wireframe example:
     @MainActor methods; deinit is nonisolated)
   ViewController: deinit { interactor?.cancelLogin() }  — calls nonisolated cancelLogin() on
     the nonisolated Interactor; this is safe because BusinessLogic is nonisolated
-- VIP+W back-references (Presenter → View, Router → View) are `weak var` (internal):
-  These are wired by the scene factory AFTER all objects are created — `private` would
-  prevent the factory from setting them:
-  ✓ weak var viewController: LoginDisplayLogic?
-  ✗ private weak var viewController: LoginDisplayLogic?
+- VIP+W ownership model — understand who owns whom to avoid both leaks and premature dealloc:
+  Interactor → Presenter: `private let presenter` (strong) — Interactor OWNS the Presenter;
+    no retain cycle because Presenter holds VC weakly. Never make this weak or optional.
+    ✓ private let presenter: LoginPresentationLogic
+    ✗ private weak var presenter: LoginPresentationLogic?  — presenter may be deallocated
+  Presenter → View: `weak var viewController` (internal) — back-reference that BREAKS the
+    retain cycle (VC → Interactor → Presenter → VC). Must be weak.
+    ✓ weak var viewController: LoginDisplayLogic?
+    ✗ private weak var viewController: LoginDisplayLogic?  — too restrictive for scene factory
 - All other delegate/datasource references MUST be `private weak var`:
   ✓ private weak var delegate: SomeDelegate?
   ✗ weak var delegate: SomeDelegate?   (missing private)
@@ -154,6 +235,11 @@ ASCII wireframe example:
 - Long-running Tasks MUST check cancellation at every suspension point:
   try Task.checkCancellation()
 - Workers are NOT @MainActor — they execute on the cooperative thread pool by default
+- Workers MUST be declared `actor` (not `final class`) — `actor` gives automatic Sendable
+  conformance required when passing Workers as init dependencies across concurrency
+  boundaries, and prevents data races on any internal mutable state:
+  ✓ actor LoginWorker: LoginWorkerProtocol { ... }
+  ✗ final class LoginWorker: LoginWorkerProtocol { ... }  — not Sendable; Swift 6 error
 
 ### VIP+W Protocol Actor Isolation (MANDATORY)
 Each protocol has exactly ONE correct isolation — never deviate:
@@ -161,6 +247,15 @@ Each protocol has exactly ONE correct isolation — never deviate:
   PresentationLogic: nonisolated — Presenter is a plain final class
   BusinessLogic: nonisolated — Interactor is a plain final class
   WorkerProtocol: nonisolated — runs on cooperative thread pool
+  RoutingLogic: `@MainActor` — Router always calls UIKit navigation APIs (main thread)
+
+Router rule — Router protocol AND Router class MUST both be @MainActor; all navigation
+(pushViewController, present, setViewControllers) is UIKit and requires the main thread.
+A nonisolated protocol with a @MainActor implementation causes Swift 6 ConformanceIsolation:
+  ✓ @MainActor protocol UserListRouting: AnyObject { func routeToDetail() }
+  ✓ @MainActor final class UserListRouter: UserListRouting { ... }
+  ✗ protocol UserListRouting: AnyObject { func routeToDetail() }  — conformance isolation
+    error when Router methods are @MainActor but the protocol is nonisolated
 
 Presenter threading rule — Presenter is a plain `final class` that dispatches to main
 internally. Never mark Presenter `@MainActor` at the class level:
@@ -192,6 +287,18 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
   the failure is acceptable:
   ✓ try? cache.write(to: url)  // non-critical cache; failure is silent by design
   ✗ try! JSONDecoder().decode(User.self, from: data)
+- All error enums MUST conform to LocalizedError and implement errorDescription — plain
+  Error conformance produces an unreadable raw enum name as the message:
+  ✓ enum NetworkError: LocalizedError {
+        case notFound, serverError(Int)
+        var errorDescription: String? {
+            switch self {
+            case .notFound: return "Resource not found"
+            case .serverError(let code): return "Server error \(code)"
+            }
+        }
+    }
+  ✗ enum NetworkError: Error { case notFound, serverError }  — .localizedDescription is useless
 
 ### Dependency Injection
 - All VIP+W layers receive every dependency through init() — no property injection,
@@ -201,19 +308,43 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
   ✓ init(worker: LoginWorking) { self.worker = worker }
   ✗ private let worker = LoginWorker()  // inside class body
 
-### Scene Factory Wiring (UIApplicationDelegate)
-- `UIApplicationDelegate.window` MUST be `var window: UIWindow?` — NOT `private var`:
-  UIApplicationDelegate protocol requires an accessible window property.
-- Presenter and Router use a no-arg `init()` — the scene factory sets `viewController`
-  directly after creating the ViewController (avoids placeholder objects):
-  let presenter = LoginPresenter()
-  let router = LoginRouter()
-  let viewController = LoginViewController(interactor: interactor, router: router)
-  presenter.viewController = viewController   // internal weak var
-  router.viewController = viewController      // internal weak var
-- Interactor receives Presenter via init (Interactor is created before the VC):
-  let presenter = LoginPresenter()
-  let interactor = LoginInteractor(presenter: presenter, worker: worker)
+### Scene Factory / Configurator Pattern
+Use an enum Configurator with a static `configure()` method to wire the VIP cycle.
+This is the preferred pattern over inline AppDelegate wiring:
+  enum LoginConfigurator {
+      @MainActor                                   // REQUIRED — UIViewController init is @MainActor
+      static func configure() -> LoginViewController {
+          let worker    = LoginWorker()
+          let presenter = LoginPresenter()
+          let interactor = LoginInteractor(presenter: presenter, worker: worker)
+          let router    = LoginRouter()
+          let vc = LoginViewController(interactor: interactor, router: router)
+          presenter.viewController = vc   // internal weak var — set post-init
+          router.viewController    = vc   // internal weak var — set post-init
+          return vc
+      }
+  }
+- `@MainActor` on `configure()` is MANDATORY — UIViewController.init is @MainActor-isolated;
+  calling it from a nonisolated context is a compile error:
+  ✓ @MainActor static func configure() -> LoginViewController
+  ✗ static func configure() -> LoginViewController  — compile error: @MainActor init from nonisolated
+- `UIApplicationDelegate.window` MUST be `var window: UIWindow?` — NOT `private var`
+- Interactor receives Presenter via init and stores it as `private let` (strong):
+  private let presenter: LoginPresentationLogic   ← strong; no retain cycle
+  private let worker:    LoginWorkerProtocol       ← same pattern for Worker
+
+### Router & DataStore
+Router handles navigation AND data passing between scenes via a DataStore protocol:
+  protocol LoginDataStore {
+      var selectedItemId: String? { get set }
+  }
+  // LoginInteractor conforms to LoginDataStore (holds scene data)
+  // Router reads destination's DataStore and sets values before navigation:
+  func routeToDetail() {
+      guard let destination = LoginDetailConfigurator.configure() as? LoginDetailDataStore else { return }
+      destination.selectedItemId = interactor?.selectedItemId
+      viewController?.navigationController?.pushViewController(destination, animated: true)
+  }
 
 ### Networking
 - No hardcoded URLs or API keys anywhere in source — use a Constants file or xcconfig
@@ -223,6 +354,9 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
   // deinit: fetchTask?.cancel()
 - Always use Codable for JSON — never JSONSerialization with manual key mapping
 - Retry logic MUST be explicit and bounded (e.g. max 3 attempts) — no infinite retries
+- Build URL paths with appendingPathComponent() — never string interpolation (path injection):
+  ✓ URL(string: baseURL)?.appendingPathComponent("users").appendingPathComponent(userId)
+  ✗ URL(string: "\(baseURL)/users/\(userId)")  — userId containing "/" breaks the path
 
 ### Logging
 - No print() anywhere in production code — this includes UIViewController extensions,
@@ -238,6 +372,44 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
   ✓ logger.debug("TODO: navigate to edit profile screen")
   ✗ print("Navigate to edit profile")
 - Never log tokens, passwords, PII, or any Keychain value — even at debug level
+- Always use privacy redaction for user-identifiable strings in log calls:
+  ✓ logger.debug("Email: \(email, privacy: .private)")
+  ✗ logger.debug("Email: \(email)")  — leaks PII into Console.app / crash logs
+- Logger MUST be an instance property — file-scope `private let logger` creates a
+  module-level global that causes naming collisions across extensions and files:
+  ✓ final class LoginInteractor { private let logger = Logger(subsystem: ..., category: ...) }
+  ✗ private let logger = Logger(...)  // file-scope — implicit global; avoid in all cases
+
+### UIKit Gotchas (MANDATORY — prevents silent runtime bugs)
+- Programmatic text field / control changes do NOT fire UIControl events:
+  Setting `textField.text = "value"` never triggers `.editingChanged` targets.
+  After setting values programmatically, manually call the interactor:
+  ✓ emailTextField.text = savedEmail
+    interactor?.updateEmail(savedEmail)      ← explicit trigger
+  ✗ emailTextField.text = savedEmail         ← editingChanged never fires; UI stays stale
+- Use modern UIButton.Configuration (iOS 15+) — avoid legacy UIButton(type: .system)
+  with manual backgroundColor/titleColor styling; Configuration handles states correctly:
+  ✓ var config = UIButton.Configuration.filled(); button = UIButton(configuration: config)
+  ✗ let button = UIButton(type: .system); button.backgroundColor = .systemBlue  — state bugs
+- `translatesAutoresizingMaskIntoConstraints = false` REQUIRED on ALL programmatic views —
+  applies to UISwitch, UIActivityIndicatorView, UILabel, UIButton, and every other subview
+  added via addSubview(). Forgetting it silently breaks Auto Layout with no compile error:
+  ✓ let toggle = UISwitch(); toggle.translatesAutoresizingMaskIntoConstraints = false
+  ✗ let toggle = UISwitch()  ← constraints declared but have zero effect at runtime
+- `Data(contentsOf:)` is SYNCHRONOUS blocking I/O — NEVER call on the main thread, even
+  inside a `Task {}`. The cooperative pool inherits the caller's executor by default when
+  the calling scope is @MainActor. Load data without @MainActor, then dispatch UI update:
+  ✓ Task { [weak self] in
+        let data = try? Data(contentsOf: url)      // runs on cooperative pool (background)
+        let image = data.flatMap { UIImage(data: $0) }
+        await MainActor.run { [weak self] in self?.imageView.image = image }
+    }
+  ✗ Task { @MainActor [weak self] in
+        let data = try? Data(contentsOf: url)      // blocks main thread → jank / watchdog
+    }
+- UIWindow initializer: use `UIWindow()` — `UIScreen.main` is deprecated in iOS 16:
+  ✓ let window = UIWindow()
+  ✗ let window = UIWindow(frame: UIScreen.main.bounds)  — deprecated; triggers Xcode warning
 
 ### Security
 - Keychain for ALL sensitive data: tokens, passwords, biometric results
@@ -248,6 +420,12 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
   Implement URLSessionDelegate.urlSession(_:didReceive:completionHandler:) for pinning
 - FileProtectionType.complete on any file containing user data:
   try data.write(to: url, options: .completeFileProtection)
+- Test credentials, prefilled form values, and debug shortcuts MUST be inside `#if DEBUG`:
+  ✓ #if DEBUG
+      emailTextField.text = "test@example.com"   // stripped from release builds
+      AppLogger.debug("Test credentials pre-filled")
+    #endif
+  ✗ emailTextField.text = "test@example.com"   // ships to App Store → App Review rejection risk
 
 ## Incremental Change Rules (MANDATORY — applies to ALL edits to existing code)
 
@@ -318,9 +496,12 @@ You automatically:
   2. Locate the source target folder (the directory containing AppDelegate/App entry point)
   3. Place ALL new feature files inside <TargetFolder>/Features/<FeatureName>/
   Never create files at the repository root or any folder outside the Xcode target.
+- Select the correct VIP-Lite tier before scaffolding (🟢🟡🟠🟣🔴) — never default to
+  full VIP+W for a static screen
 - Generate an ASCII wireframe before any new UIKit screen/component
-- Scaffold full VIP+W file set when asked to create a new feature
+- Scaffold only the files the selected VIP-Lite tier requires — no unused files
 - Suggest refactors if existing code violates SOLID or VIP+W separation
+- Use UIView as DisplayLogic conformer for reusable components on 3+ screens
 - Follow Apple Human Interface Guidelines
 
 You never suggest:
@@ -328,6 +509,7 @@ You never suggest:
 - MVVM, MVC, or other architectures unless explicitly requested
 - Business logic inside UIViewControllers or UIViews
 - Concrete class dependencies between VIP+W layers
+- Full VIP+W for screens that need only 🟢 or 🟡 tier
 
 ## Refactor Process: Legacy → VIP+W (MANDATORY when asked to refactor)
 
