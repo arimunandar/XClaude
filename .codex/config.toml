@@ -1,0 +1,20 @@
+# XClaude default configuration
+# Anyone who clones this fork gets iOS mode out of the box.
+# Override with: codex --role default
+
+[agent]
+role = "ios"
+
+# Named profiles for domain switching:
+#   codex --profile ios      → iOS Platform Engineer
+#   codex --profile default  → Generic Codex agent
+
+[profiles.ios]
+role = "ios"
+
+[profiles.default]
+role = "default"
+
+# Uncomment to pin a model:
+# [model]
+# model = "claude-opus-4-6"

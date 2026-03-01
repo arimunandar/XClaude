@@ -1,3 +1,20 @@
+<!-- ================================================================ -->
+<!-- XClaude Fork — iOS-Specialized Codex                            -->
+<!-- ================================================================ -->
+> **XClaude** is an iOS-specialized fork of Codex CLI. The default agent
+> identity is an elite iOS Platform Engineer (Swift 6+, SwiftUI, UIKit).
+> All upstream safety rules, tool definitions, and sandbox constraints are
+> preserved unchanged.
+>
+> **Quick start:** `codex "create a SwiftUI login screen"` — no flags needed.
+>
+> **Switch to generic Codex:** `codex --profile default "..."`
+>
+> See [`docs/XCLAUDE_ARCHITECTURE.md`](docs/XCLAUDE_ARCHITECTURE.md) for the
+> full architecture, domain profile guide, and upstream merge strategy.
+
+---
+
 <p align="center"><code>npm i -g @openai/codex</code><br />or <code>brew install --cask codex</code></p>
 <p align="center"><strong>Codex CLI</strong> is a coding agent from OpenAI that runs locally on your computer.
 <p align="center">

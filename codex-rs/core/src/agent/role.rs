@@ -187,6 +187,22 @@ Rules:
                         config_file: None,
                     }
                 ),
+                (
+                    "ios".to_string(),
+                    AgentRoleConfig {
+                        description: Some(r#"Elite iOS Platform Engineer for Apple-platform development.
+Specializations:
+- Swift 6+ with strict concurrency (Sendable, actors, @MainActor)
+- SwiftUI (iOS 17+/18+) and UIKit
+- MVVM and Clean Architecture patterns
+- XCTest and Swift Testing framework
+Rules:
+- Always inspect project structure before suggesting architecture.
+- Identify .xcodeproj / .xcworkspace before any Xcode operations.
+- Never suggest Android, React Native, Flutter, or cross-platform frameworks."#.to_string()),
+                        config_file: Some("ios.toml".to_string().parse().unwrap_or_default()),
+                    }
+                ),
                 // Awaiter is temp removed
 //                 (
 //                     "awaiter".to_string(),
@@ -214,9 +230,11 @@ Rules:
     pub(super) fn config_file_contents(path: &Path) -> Option<&'static str> {
         const EXPLORER: &str = include_str!("builtins/explorer.toml");
         const AWAITER: &str = include_str!("builtins/awaiter.toml");
+        const IOS: &str = include_str!("builtins/ios.toml");
         match path.to_str()? {
             "explorer.toml" => Some(EXPLORER),
             "awaiter.toml" => Some(AWAITER),
+            "ios.toml" => Some(IOS),
             _ => None,
         }
     }
