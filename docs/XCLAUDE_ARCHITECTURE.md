@@ -97,6 +97,67 @@ role = "<domain>"
 
 ---
 
+## Claude Setup
+
+XClaude uses Claude (Anthropic) as its default model provider.
+
+### Getting API Access
+
+Claude.ai Pro/Max **does not** include API access. You need a separate API key:
+
+1. Go to <https://console.anthropic.com/settings/keys>
+2. Create an API key
+3. Export it in your shell:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Using a proxy (e.g. z.ai for Claude Max subscribers):**
+
+```bash
+export ANTHROPIC_API_KEY=<your-proxy-token>
+export ANTHROPIC_BASE_URL=https://api.z.ai/api/anthropic   # no /v1 suffix — XClaude appends it
+```
+
+> **Important:** `ANTHROPIC_BASE_URL` must NOT include the `/v1` path segment.
+> XClaude follows the Anthropic SDK convention and always appends `v1/messages` to the base URL.
+> The default value is `https://api.anthropic.com` (without `/v1`).
+
+### Running XClaude with Claude
+
+```bash
+# Default: Claude Sonnet 4.6 (best cost/quality balance)
+codex "create a SwiftUI login screen"
+
+# Claude Opus 4.6 (most capable)
+codex --profile ios-opus "design a CoreData schema for a todo app"
+
+# Claude Haiku 4.5 (fastest / cheapest)
+codex --profile ios-haiku "add a comment to this function"
+
+# Fall back to OpenAI
+codex --profile openai "hello"
+```
+
+### How the Anthropic adapter works
+
+Codex internally uses the OpenAI Responses API format. The Anthropic adapter
+(`codex-rs/codex-api/src/endpoint/anthropic.rs`) translates between the two:
+
+| Dimension | OpenAI Responses API | Anthropic Messages API |
+|-----------|---------------------|----------------------|
+| Endpoint | `POST /v1/responses` | `POST /v1/messages` |
+| System field | `instructions` | `system` |
+| Tool param key | `parameters` | `input_schema` |
+| Auth header | `Authorization: Bearer` | `Authorization: Bearer` |
+| Required header | — | `anthropic-version: 2023-06-01` |
+
+The adapter is wired via `WireApi::Anthropic` in `model_provider_info.rs` and
+dispatched in `client.rs`. All other Codex core logic is unchanged.
+
+---
+
 ## Switching Profiles via CLI
 
 ```bash

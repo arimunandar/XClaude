@@ -2,16 +2,28 @@
 <!-- XClaude Fork — iOS-Specialized Codex                            -->
 <!-- ================================================================ -->
 > **XClaude** is an iOS-specialized fork of Codex CLI. The default agent
-> identity is an elite iOS Platform Engineer (Swift 6+, SwiftUI, UIKit).
+> identity is an elite iOS Platform Engineer (Swift 6+, SwiftUI, UIKit),
+> powered by **Claude** (Anthropic) instead of OpenAI.
 > All upstream safety rules, tool definitions, and sandbox constraints are
 > preserved unchanged.
 >
-> **Quick start:** `codex "create a SwiftUI login screen"` — no flags needed.
+> **Prerequisites:**
+> ```bash
+> export ANTHROPIC_API_KEY=sk-ant-...   # from console.anthropic.com/settings/keys
+> ```
+> Note: Claude.ai Pro/Max subscription does **not** include API access.
+>
+> **Quick start:** `codex "create a SwiftUI login screen"` — uses Claude Sonnet 4.6
+>
+> **Model profiles:**
+> - `codex --profile ios-opus "..."` — Claude Opus 4.6 (most capable)
+> - `codex --profile ios-haiku "..."` — Claude Haiku 4.5 (fastest)
+> - `codex --profile openai "..."` — OpenAI fallback
 >
 > **Switch to generic Codex:** `codex --profile default "..."`
 >
 > See [`docs/XCLAUDE_ARCHITECTURE.md`](docs/XCLAUDE_ARCHITECTURE.md) for the
-> full architecture, domain profile guide, and upstream merge strategy.
+> full architecture, Claude setup, domain profile guide, and upstream merge strategy.
 
 ---
 

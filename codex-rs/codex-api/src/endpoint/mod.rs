@@ -1,3 +1,4 @@
+pub mod anthropic;
 pub mod compact;
 pub mod memories;
 pub mod models;

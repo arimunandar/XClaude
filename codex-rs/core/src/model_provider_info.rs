@@ -38,6 +38,8 @@ pub enum WireApi {
     /// The Responses API exposed by OpenAI at `/v1/responses`.
     #[default]
     Responses,
+    /// The Messages API exposed by Anthropic at `/v1/messages`.
+    Anthropic,
 }
 
 impl<'de> Deserialize<'de> for WireApi {
@@ -48,8 +50,12 @@ impl<'de> Deserialize<'de> for WireApi {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
             "responses" => Ok(Self::Responses),
+            "anthropic" => Ok(Self::Anthropic),
             "chat" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
-            _ => Err(serde::de::Error::unknown_variant(&value, &["responses"])),
+            _ => Err(serde::de::Error::unknown_variant(
+                &value,
+                &["responses", "anthropic"],
+            )),
         }
     }
 }
@@ -259,6 +265,42 @@ impl ModelProviderInfo {
     pub fn is_openai(&self) -> bool {
         self.name == OPENAI_PROVIDER_NAME
     }
+
+    pub fn create_anthropic_provider() -> ModelProviderInfo {
+        ModelProviderInfo {
+            name: "Anthropic".into(),
+            // Allow override via ANTHROPIC_BASE_URL (e.g. proxies or local servers).
+            // Matches the Anthropic SDK convention: base URL does NOT include `/v1`.
+            // The `/v1/` prefix is appended in the request path (see anthropic.rs).
+            base_url: Some(
+                std::env::var("ANTHROPIC_BASE_URL")
+                    .ok()
+                    .filter(|v| !v.trim().is_empty())
+                    .unwrap_or_else(|| "https://api.anthropic.com".to_string()),
+            ),
+            env_key: Some("ANTHROPIC_API_KEY".into()),
+            env_key_instructions: Some(
+                "Create an API key at https://console.anthropic.com/settings/keys\n\
+                 Note: Claude.ai Pro/Max subscription does not include API access.\n\
+                 Export it as: export ANTHROPIC_API_KEY=sk-ant-..."
+                    .to_string(),
+            ),
+            experimental_bearer_token: None,
+            wire_api: WireApi::Anthropic,
+            query_params: None,
+            http_headers: Some(
+                [("anthropic-version".to_string(), "2023-06-01".to_string())]
+                    .into_iter()
+                    .collect(),
+            ),
+            env_http_headers: None,
+            request_max_retries: None,
+            stream_max_retries: None,
+            stream_idle_timeout_ms: None,
+            requires_openai_auth: false,
+            supports_websockets: false,
+        }
+    }
 }
 
 pub const DEFAULT_LMSTUDIO_PORT: u16 = 1234;
@@ -277,6 +319,7 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
     // `model_providers` in config.toml to add their own providers.
     [
         ("openai", P::create_openai_provider()),
+        ("anthropic", P::create_anthropic_provider()),
         (
             OLLAMA_OSS_PROVIDER_ID,
             create_oss_provider(DEFAULT_OLLAMA_PORT, WireApi::Responses),
