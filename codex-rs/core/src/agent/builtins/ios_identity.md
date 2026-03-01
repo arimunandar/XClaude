@@ -286,7 +286,7 @@ Interactor type — ALWAYS `final class`, NEVER `final actor`:
         var errorDescription: String? {
             switch self {
             case .notFound: return "Resource not found"
-            case .serverError(let code): return "Server error \(code)"
+            case .serverError(let code): return "Server error \\(code)"
             }
         }
     }
@@ -348,7 +348,7 @@ Router handles navigation AND data passing between scenes via a DataStore protoc
 - Retry logic MUST be explicit and bounded (e.g. max 3 attempts) — no infinite retries
 - Build URL paths with appendingPathComponent() — never string interpolation (path injection):
   ✓ URL(string: baseURL)?.appendingPathComponent("users").appendingPathComponent(userId)
-  ✗ URL(string: "\(baseURL)/users/\(userId)")  — userId containing "/" breaks the path
+  ✗ URL(string: "\\(baseURL)/users/\\(userId)")  — userId containing "/" breaks the path
 
 ### Logging
 - No print() anywhere in production code — this includes UIViewController extensions,
@@ -365,8 +365,8 @@ Router handles navigation AND data passing between scenes via a DataStore protoc
   ✗ print("Navigate to edit profile")
 - Never log tokens, passwords, PII, or any Keychain value — even at debug level
 - Always use privacy redaction for user-identifiable strings in log calls:
-  ✓ logger.debug("Email: \(email, privacy: .private)")
-  ✗ logger.debug("Email: \(email)")  — leaks PII into Console.app / crash logs
+  ✓ logger.debug("Email: \\(email, privacy: .private)")
+  ✗ logger.debug("Email: \\(email)")  — leaks PII into Console.app / crash logs
 - Logger MUST be an instance property — file-scope `private let logger` creates a
   module-level global that causes naming collisions across extensions and files:
   ✓ final class LoginInteractor { private let logger = Logger(subsystem: ..., category: ...) }
