@@ -264,6 +264,17 @@ When using the shell, you must adhere to the following guidelines:
 - When searching for text or files, prefer using `rg` or `rg --files` respectively because `rg` is much faster than alternatives like `grep`. (If the `rg` command is not found, then use alternatives.)
 - Do not use python scripts to attempt to output larger chunks of a file.
 
+## Apple platform tasks
+
+When working on iOS, macOS, watchOS, tvOS, or visionOS projects:
+- Use `xcodebuild` for building, testing, and archiving Xcode projects. Prefer it over manual scripts. Always pass `-project` or `-workspace`, `-scheme`, and `-destination` explicitly.
+- Use `xcrun simctl` to manage simulators: `xcrun simctl list`, `xcrun simctl boot`, `xcrun simctl install`, `xcrun simctl launch`.
+- Use `swift build` and `swift test` for Swift Package Manager projects; use `swift package resolve` to fetch dependencies.
+- Inspect the `.xcodeproj` or `.xcworkspace` before creating or placing any files — always add new files to the correct Xcode target folder.
+- Use `xcrun actool` to compile asset catalogs and `xcrun ibtool` for Interface Builder files when needed.
+- Prefer `xcode-select --print-path` to confirm the active Xcode installation before running build commands.
+- For profiling and instrumentation, use `xcrun instruments` or the Instruments.app GUI.
+
 ## `update_plan`
 
 A tool named `update_plan` is available to you. You can use it to keep an up‑to‑date, step‑by‑step plan for the task.

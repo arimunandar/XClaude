@@ -3750,6 +3750,9 @@ impl ChatWidget {
             SlashCommand::Theme => {
                 self.open_theme_picker();
             }
+            SlashCommand::Provider => {
+                self.open_provider_popup();
+            }
             SlashCommand::Ps => {
                 self.add_ps_output();
             }
@@ -4753,6 +4756,102 @@ impl ChatWidget {
             terminal_width,
         );
         self.bottom_pane.show_selection_view(params);
+    }
+
+    /// Open the provider/profile picker popup.
+    ///
+    /// Lists all named profiles from the user config. Selecting a profile with
+    /// the same provider switches the model at runtime. Selecting a profile with
+    /// a different provider shows a message with the restart command.
+    fn open_provider_popup(&mut self) {
+        let current_profile = self.config.active_profile.clone();
+        let current_provider_id = self.config.model_provider_id.clone();
+
+        // Collect (profile_name, provider_id, model) sorted alphabetically.
+        let mut entries: Vec<(String, String, String)> = self
+            .config
+            .profiles
+            .iter()
+            .map(|(name, profile)| {
+                let provider = profile
+                    .model_provider
+                    .clone()
+                    .unwrap_or_else(|| "openai".to_string());
+                let model = profile
+                    .model
+                    .clone()
+                    .unwrap_or_else(|| "(default)".to_string());
+                (name.clone(), provider, model)
+            })
+            .collect();
+        entries.sort_by(|a, b| a.0.cmp(&b.0));
+
+        if entries.is_empty() {
+            self.add_info_message(
+                "No named profiles found. Add [profiles.*] entries to ~/.codex/config.toml."
+                    .to_string(),
+                None,
+            );
+            return;
+        }
+
+        let items: Vec<SelectionItem> = entries
+            .into_iter()
+            .map(|(profile_name, provider_id, model)| {
+                let description = Some(format!("{provider_id} / {model}"));
+                let is_current =
+                    current_profile.as_deref() == Some(profile_name.as_str());
+                let is_same_provider = provider_id == current_provider_id;
+
+                let actions: Vec<SelectionAction> = if is_current {
+                    // Already on this profile — selecting it is a no-op.
+                    vec![]
+                } else if is_same_provider {
+                    // Same provider: switch model in the running session.
+                    let m1 = model.clone();
+                    let m2 = model.clone();
+                    vec![Box::new(move |tx: &AppEventSender| {
+                        tx.send(AppEvent::UpdateModel(m1.clone()));
+                        tx.send(AppEvent::PersistModelSelection {
+                            model: m2.clone(),
+                            effort: None,
+                        });
+                    })]
+                } else {
+                    // Different provider: must restart with --profile flag.
+                    let msg = format!(
+                        "Provider change requires restart. Use: xclaude --profile {profile_name}"
+                    );
+                    vec![Box::new(move |tx: &AppEventSender| {
+                        tx.send(AppEvent::InsertHistoryCell(Box::new(
+                            crate::history_cell::new_info_event(msg.clone(), None),
+                        )));
+                    })]
+                };
+
+                SelectionItem {
+                    name: profile_name,
+                    description,
+                    is_current,
+                    actions,
+                    dismiss_on_select: true,
+                    ..Default::default()
+                }
+            })
+            .collect();
+
+        let mut header = ColumnRenderable::new();
+        header.push(Line::from("Select Provider / Profile".bold()));
+        header.push(Line::from(
+            "Switch model or provider for this session.".dim(),
+        ));
+
+        self.bottom_pane.show_selection_view(SelectionViewParams {
+            header: Box::new(header),
+            footer_hint: Some(standard_popup_hint_line()),
+            items,
+            ..Default::default()
+        });
     }
 
     /// Parses configured status-line ids into known items and collects unknown ids.

@@ -13,6 +13,7 @@ pub enum SlashCommand {
     // DO NOT ALPHA-SORT! Enum order is presentation order in the popup, so
     // more frequently used commands should be listed first.
     Model,
+    Provider,
     Approvals,
     Permissions,
     #[strum(serialize = "setup-default-sandbox")]
@@ -88,6 +89,7 @@ impl SlashCommand {
             SlashCommand::MemoryDrop => "DO NOT USE",
             SlashCommand::MemoryUpdate => "DO NOT USE",
             SlashCommand::Model => "choose what model and reasoning effort to use",
+            SlashCommand::Provider => "switch provider / profile",
             SlashCommand::Personality => "choose a communication style for Codex",
             SlashCommand::Realtime => "toggle realtime voice mode (experimental)",
             SlashCommand::Settings => "configure realtime microphone/speaker",
@@ -170,6 +172,7 @@ impl SlashCommand {
             SlashCommand::Agent => true,
             SlashCommand::Statusline => false,
             SlashCommand::Theme => false,
+            SlashCommand::Provider => false,
         }
     }
 

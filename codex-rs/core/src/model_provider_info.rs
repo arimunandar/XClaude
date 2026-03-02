@@ -33,13 +33,15 @@ pub(crate) const OLLAMA_CHAT_PROVIDER_REMOVED_ERROR: &str = "`ollama-chat` is no
 
 /// Wire protocol that the provider speaks.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, JsonSchema)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "kebab-case")]
 pub enum WireApi {
     /// The Responses API exposed by OpenAI at `/v1/responses`.
     #[default]
     Responses,
     /// The Messages API exposed by Anthropic at `/v1/messages`.
     Anthropic,
+    /// The Chat Completions API exposed by OpenAI-compatible providers at `/chat/completions`.
+    ChatCompletions,
 }
 
 impl<'de> Deserialize<'de> for WireApi {
@@ -51,10 +53,11 @@ impl<'de> Deserialize<'de> for WireApi {
         match value.as_str() {
             "responses" => Ok(Self::Responses),
             "anthropic" => Ok(Self::Anthropic),
+            "chat-completions" => Ok(Self::ChatCompletions),
             "chat" => Err(serde::de::Error::custom(CHAT_WIRE_API_REMOVED_ERROR)),
             _ => Err(serde::de::Error::unknown_variant(
                 &value,
-                &["responses", "anthropic"],
+                &["responses", "anthropic", "chat-completions"],
             )),
         }
     }

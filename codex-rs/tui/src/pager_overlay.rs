@@ -66,6 +66,62 @@ impl Overlay {
         Self::Static(StaticOverlay::with_renderables(renderables, title))
     }
 
+
+    pub(crate) fn new_about() -> Self {
+        use crate::version::CODEX_CLI_VERSION;
+        
+        let title = "A B O U T".to_string();
+        let mut lines = vec![
+            Line::from(vec![
+                "XClaude".cyan().bold(),
+                " — ".dim(),
+                "iOS‑Specialized Coding Agent".into(),
+            ]),
+            "".into(),
+            Line::from(vec![
+                "Version: ".dim(),
+                CODEX_CLI_VERSION.into(),
+            ]),
+            "".into(),
+            Line::from(vec![
+                "XClaude is an iOS‑specialized fork of Codex CLI.".into(),
+            ]),
+            Line::from(vec![
+                "The default agent is an elite iOS Platform Engineer.".into(),
+            ]),
+            "".into(),
+            Line::from("Key Bindings".cyan().bold()),
+            Line::from(vec![
+                "  Ctrl+T".green(),
+                " — ".dim(),
+                "Transcript overlay".into(),
+            ]),
+            Line::from(vec![
+                "  Ctrl+H".green(),
+                " — ".dim(),
+                "About screen".into(),
+            ]),
+            Line::from(vec![
+                "  Ctrl+L".green(),
+                " — ".dim(),
+                "Clear terminal".into(),
+            ]),
+            Line::from(vec![
+                "  Ctrl+G".green(),
+                " — ".dim(),
+                "Open external editor".into(),
+            ]),
+            "".into(),
+            Line::from(vec![
+                "For more information, visit ".dim(),
+                "https://github.com/openai/codex".cyan().underlined(),
+            ]),
+        ];
+        
+        Self::Static(StaticOverlay::with_title(lines, title))
+
+
+    }
     pub(crate) fn handle_event(&mut self, tui: &mut tui::Tui, event: TuiEvent) -> Result<()> {
         match self {
             Overlay::Transcript(o) => o.handle_event(tui, event),
