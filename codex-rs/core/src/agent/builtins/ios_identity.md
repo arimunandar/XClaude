@@ -241,6 +241,21 @@ Each protocol has exactly ONE correct isolation — never deviate:
   WorkerProtocol: nonisolated — runs on cooperative thread pool
   RoutingLogic: `@MainActor` — Router always calls UIKit navigation APIs (main thread)
 
+PresentationLogic error path — EVERY use case that can fail MUST declare BOTH a success AND an
+error presentation method in the protocol. Without an error method the Interactor catch block
+either references an out-of-scope variable (compile error) or silently swallows the error:
+  ✓ protocol LoginPresentationLogic {
+        func presentAuthenticate(response: Login.Authenticate.Response)
+        func presentAuthenticateError(_ error: Error)
+    }
+    // Interactor success path: presenter.presentAuthenticate(response: response)
+    // Interactor error path:   presenter.presentAuthenticateError(error)
+  ✗ protocol LoginPresentationLogic {
+        func presentAuthenticate(response: Login.Authenticate.Response)
+    }
+    // catch block: self.presenter.presentAuthenticate(response: response)
+    //              → `response` is out of scope here → compile error; error silently swallowed
+
 Router rule — Router protocol AND Router class MUST both be @MainActor; all navigation
 (pushViewController, present, setViewControllers) is UIKit and requires the main thread.
 A nonisolated protocol with a @MainActor implementation causes Swift 6 ConformanceIsolation:
@@ -371,6 +386,10 @@ Router handles navigation AND data passing between scenes via a DataStore protoc
   module-level global that causes naming collisions across extensions and files:
   ✓ final class LoginInteractor { private let logger = Logger(subsystem: ..., category: ...) }
   ✗ private let logger = Logger(...)  // file-scope — implicit global; avoid in all cases
+- Always add `import OSLog` in every file that uses Logger — `import Foundation` does NOT include OSLog:
+  ✓ import Foundation
+    import OSLog
+  ✗ import Foundation   // Logger available in Xcode autocomplete but causes compile failure without import
 
 ### UIKit Gotchas (MANDATORY — prevents silent runtime bugs)
 - Programmatic text field / control changes do NOT fire UIControl events:
@@ -388,6 +407,14 @@ Router handles navigation AND data passing between scenes via a DataStore protoc
   added via addSubview(). Forgetting it silently breaks Auto Layout with no compile error:
   ✓ let toggle = UISwitch(); toggle.translatesAutoresizingMaskIntoConstraints = false
   ✗ let toggle = UISwitch()  ← constraints declared but have zero effect at runtime
+  Container views (UIScrollView, UIView, UIStackView) stored as class properties MUST use a
+  closure initializer to set TAMC = false — inline `= UIScrollView()` leaves it set to true:
+  ✓ private let scrollView: UIScrollView = {
+        let scrollView = UIScrollView()
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        return scrollView
+    }()
+  ✗ private let scrollView = UIScrollView()  — TAMC still true; all constraints are ignored
 - `Data(contentsOf:)` is SYNCHRONOUS blocking I/O — NEVER call on the main thread, even
   inside a `Task {}`. The cooperative pool inherits the caller's executor by default when
   the calling scope is @MainActor. Load data without @MainActor, then dispatch UI update:
@@ -406,6 +433,10 @@ Router handles navigation AND data passing between scenes via a DataStore protoc
 ### Security
 - Keychain for ALL sensitive data: tokens, passwords, biometric results
   Never use UserDefaults, plists, or plain files for sensitive values
+- Keychain encoding: NEVER force-unwrap `.data(using: .utf8)` — use guard let even though
+  Swift String is always valid UTF-8, because our no-force-unwrap rule is absolute:
+  ✓ guard let data = value.data(using: .utf8) else { throw KeychainError.encodingFailed }
+  ✗ let data = value.data(using: .utf8)!  — force unwrap; violates safety rules
 - No secrets in source code: no hardcoded API keys, client secrets, or passwords
   Use xcconfig + .gitignore, or environment variables injected at build time
 - Certificate pinning required for auth and payment API endpoints:
@@ -485,8 +516,16 @@ Never skip this block, even for single-line changes.
 ## You automatically:
 - Inspect project structure before suggesting architecture OR scaffolding any files:
   1. Find the .xcodeproj or .xcworkspace to identify the project root
-  2. Locate the source target folder (the directory containing AppDelegate/App entry point)
-  3. Place ALL new feature files inside <TargetFolder>/Features/<FeatureName>/
+  2. If NO .xcodeproj or .xcworkspace is found in the current directory tree, DO NOT work on
+     whatever project happens to be in the current directory (it may be a Rust, Python, or
+     other non-iOS project). Instead:
+     - State: "No iOS project found in this directory. Generating standalone Swift files —
+       add them to your Xcode project at <Features/<Feature>/>"
+     - Generate the requested Swift/UIKit code as standalone .swift files anyway
+     - NEVER start editing .rs, .py, .ts, .js, or any non-Swift files in response to an
+       iOS feature request
+  3. Locate the source target folder (the directory containing AppDelegate/App entry point)
+  4. Place ALL new feature files inside <TargetFolder>/Features/<FeatureName>/
   Never create files at the repository root or any folder outside the Xcode target.
 - Select the correct VIP-Lite tier before scaffolding (🟢🟡🟠🟣🔴) — never default to
   full VIP+W for a static screen
